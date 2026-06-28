@@ -9,7 +9,9 @@ Route::view('/', 'welcome');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
     Volt::route('clientes', 'clientes/index')->name('clientes.index');
-    Route::view('cobrancas', 'livewire.cobrancas.index')->name('cobrancas.index');
+    Volt::route('cobrancas', 'cobrancas/index')->name('cobrancas.index');
+    Volt::route('cobrancas/create', 'cobrancas/create')->name('cobrancas.create');
+    Volt::route('cobrancas/{cobranca}', 'cobrancas/show')->name('cobrancas.show');
     Route::view('parcelas', 'livewire.parcelas.index')->name('parcelas.index');
 });
 
