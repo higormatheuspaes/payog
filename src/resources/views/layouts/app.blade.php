@@ -12,18 +12,12 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased bg-gray-50">
+    <body class="font-sans antialiased bg-gray-100">
         <div class="flex h-screen overflow-hidden">
 
             <livewire:layout.navigation />
 
-            <div class="flex flex-col flex-1 overflow-hidden">
-                @isset($header)
-                    <header class="bg-white border-b border-gray-200 px-6 py-4">
-                        {{ $header }}
-                    </header>
-                @endisset
-
+            <div class="flex flex-col flex-1 overflow-hidden min-w-0">
                 <main class="flex-1 overflow-y-auto p-6">
                     {{ $slot }}
                 </main>
