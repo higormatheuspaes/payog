@@ -3,3 +3,101 @@
 @tailwind utilities;
 
 [x-cloak] { display: none !important; }
+
+/* ═══════════════════════════════════════════════════
+   DARK MODE — overrides globais por classe Tailwind
+   ═══════════════════════════════════════════════════ */
+
+/* Página / fundo geral */
+.dark .bg-gray-100   { background-color: #0f172a !important; }
+
+/* Cards, sidebar, painéis */
+.dark .bg-white      { background-color: #1e293b !important; }
+
+/* Cabeçalhos de tabela, fundos sutis */
+.dark .bg-gray-50    { background-color: #162032 !important; }
+
+/* Badges e elementos de fundo leve */
+.dark .bg-gray-200   { background-color: #334155 !important; }
+
+/* Texto */
+.dark .text-gray-900 { color: #f8fafc !important; }
+.dark .text-gray-800 { color: #f1f5f9 !important; }
+.dark .text-gray-700 { color: #e2e8f0 !important; }
+.dark .text-gray-600 { color: #cbd5e1 !important; }
+.dark .text-gray-500 { color: #94a3b8 !important; }
+.dark .text-gray-400 { color: #64748b !important; }
+
+/* Bordas */
+.dark .border-gray-100  { border-color: #1e293b !important; }
+.dark .border-gray-200  { border-color: #334155 !important; }
+.dark .border-gray-300  { border-color: #475569 !important; }
+.dark .border-dashed    { border-color: #334155 !important; }
+
+/* Divisórias (divide-y) */
+.dark .divide-gray-100 > * + * { border-color: #1e293b !important; }
+.dark .divide-gray-200 > * + * { border-color: #334155 !important; }
+
+/* Hover em linhas e itens */
+.dark .hover\:bg-gray-50:hover  { background-color: #243447 !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; }
+
+/* Indigo — links, active sidebar, badges */
+.dark .bg-indigo-50          { background-color: #1e1b4b !important; }
+.dark .text-indigo-700       { color: #a5b4fc !important; }
+.dark .text-indigo-600       { color: #818cf8 !important; }
+.dark .hover\:text-indigo-700:hover { color: #a5b4fc !important; }
+.dark .hover\:text-indigo-600:hover { color: #818cf8 !important; }
+.dark .hover\:bg-indigo-50:hover    { background-color: #1e1b4b !important; }
+
+/* Status badges */
+.dark .bg-green-100  { background-color: #052e16 !important; }
+.dark .bg-green-50   { background-color: #031a0d !important; }
+.dark .bg-red-100    { background-color: #450a0a !important; }
+.dark .bg-red-50     { background-color: #2d0808 !important; }
+.dark .bg-yellow-100 { background-color: #2d1a00 !important; }
+.dark .bg-blue-100   { background-color: #0c1a4b !important; }
+.dark .bg-purple-100 { background-color: #2e1065 !important; }
+.dark .bg-orange-100 { background-color: #431407 !important; }
+
+/* Texto de status badges */
+.dark .text-green-700  { color: #4ade80 !important; }
+.dark .text-green-600  { color: #4ade80 !important; }
+.dark .text-red-600    { color: #f87171 !important; }
+.dark .text-red-700    { color: #f87171 !important; }
+.dark .text-red-400    { color: #fca5a5 !important; }
+.dark .text-yellow-700 { color: #fbbf24 !important; }
+.dark .text-orange-500 { color: #fb923c !important; }
+.dark .text-blue-700   { color: #60a5fa !important; }
+.dark .text-purple-700 { color: #c084fc !important; }
+
+/* Hover em botões de ação com cores */
+.dark .hover\:bg-red-50:hover    { background-color: #2d0808 !important; }
+.dark .hover\:bg-green-50:hover  { background-color: #031a0d !important; }
+.dark .hover\:text-red-600:hover { color: #f87171 !important; }
+.dark .hover\:text-green-600:hover { color: #4ade80 !important; }
+
+/* Inputs, selects, textareas */
+.dark input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark select,
+.dark textarea {
+    background-color: #0f172a !important;
+    border-color: #475569 !important;
+    color: #f8fafc !important;
+}
+
+.dark input::placeholder { color: #64748b !important; }
+.dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+
+/* Paginação */
+.dark nav[role="navigation"] span,
+.dark nav[role="navigation"] a {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+
+/* Scrollbar */
+.dark ::-webkit-scrollbar-track { background: #0f172a; }
+.dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }

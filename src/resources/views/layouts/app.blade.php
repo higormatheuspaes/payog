@@ -11,6 +11,17 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        {{-- Anti-flash + reaplicar dark após wire:navigate --}}
+        <script>
+            function applyTheme() {
+                const dark = localStorage.getItem('theme') === 'dark' ||
+                    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.classList.toggle('dark', dark);
+            }
+            applyTheme();
+            document.addEventListener('livewire:navigated', applyTheme);
+        </script>
     </head>
     <body
         x-data="{ open: false }"
@@ -49,7 +60,18 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <span class="text-lg font-bold text-gray-900">HMPay</span>
+                    <span class="text-lg font-bold text-gray-900 flex-1">HMPay</span>
+                    <button
+                        x-data="{ dark: document.documentElement.classList.contains('dark') }"
+                        @click="dark = !dark; document.documentElement.classList.toggle('dark', dark); localStorage.setItem('theme', dark ? 'dark' : 'light')"
+                        class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
+                        <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <svg x-show="dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </button>
                 </header>
 
                 <main class="flex-1 overflow-y-auto p-4 lg:p-6">
