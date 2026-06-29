@@ -2,6 +2,7 @@
 
 use App\Models\Cliente;
 use App\Models\Parcela;
+use App\Services\ScoreService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -43,12 +44,16 @@ new #[Layout('layouts.app')] class extends Component
 
     public function marcarPago(int $parcelaId): void
     {
-        Parcela::whereHas('cobranca', fn($q) =>
+        $parcela = Parcela::whereHas('cobranca', fn($q) =>
             $q->where('empresa_id', Auth::user()->empresa_id)
-        )->findOrFail($parcelaId)->update([
+        )->findOrFail($parcelaId);
+
+        $parcela->update([
             'status'         => 'pago',
             'data_pagamento' => now()->toDateString(),
         ]);
+        $parcela->refresh()->load('cobranca.cliente');
+        (new ScoreService)->aplicarPagamento($parcela);
     }
 }; ?>
 

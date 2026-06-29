@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ScoreHistorico extends Model
 {
+    protected $table = 'score_historico';
+
     protected $fillable = [
         'cliente_id',
         'parcela_id',
