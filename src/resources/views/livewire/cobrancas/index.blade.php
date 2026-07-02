@@ -128,14 +128,14 @@ new #[Layout('layouts.app')] class extends Component
         </div>
     </x-slot:filters>
 
-    <table class="w-full table-fixed text-sm">
+    <table class="w-full table-fixed text-sm min-w-[420px]">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="text-left px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs w-[28%]">Cliente</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs">Cliente</th>
                         <th class="text-left px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs">Descrição</th>
-                        <th class="text-left px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs w-[90px]">Tipo</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs w-[90px] hidden sm:table-cell">Tipo</th>
                         <th class="text-left px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs w-[110px]">Valor</th>
-                        <th class="text-left px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs w-[90px]">Parcelas</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-500 uppercase tracking-wide text-xs w-[90px] hidden sm:table-cell">Parcelas</th>
                         <th class="px-4 py-3 w-[48px]"></th>
                     </tr>
                 </thead>
@@ -143,9 +143,9 @@ new #[Layout('layouts.app')] class extends Component
                     @forelse($cobrancas as $cobranca)
                         <tr class="hover:bg-gray-50 transition-colors cursor-pointer" wire:navigate
                             onclick="window.location='{{ route('cobrancas.show', $cobranca) }}'">
-                            <td class="px-4 py-3.5 font-medium text-gray-900 truncate">{{ $cobranca->cliente->nome }}</td>
+                            <td class="px-4 py-3.5 font-medium text-gray-900">{{ $cobranca->cliente->nome }}</td>
                             <td class="px-4 py-3.5 text-gray-600 truncate">{{ $cobranca->descricao }}</td>
-                            <td class="px-4 py-3.5">
+                            <td class="px-4 py-3.5 hidden sm:table-cell">
                                 @if($cobranca->tipo === 'avulsa')
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Avulsa</span>
                                 @else
@@ -155,7 +155,7 @@ new #[Layout('layouts.app')] class extends Component
                             <td class="px-4 py-3.5 text-gray-700 font-medium">
                                 R$ {{ number_format($cobranca->valor_total, 2, ',', '.') }}
                             </td>
-                            <td class="px-4 py-3.5 text-gray-500">
+                            <td class="px-4 py-3.5 text-gray-500 hidden sm:table-cell">
                                 @php
                                     $pagas    = $cobranca->parcelas->where('status', 'pago')->count();
                                     $total    = $cobranca->parcelas->count();

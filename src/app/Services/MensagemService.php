@@ -97,6 +97,21 @@ class MensagemService
     {
         $telefone = $this->formatarTelefone($cliente->telefone);
 
+        if (! (new ConsumoService)->podEnviar($empresa)) {
+            LogMensagem::create([
+                'empresa_id'    => $empresa->id,
+                'cliente_id'    => $cliente->id,
+                'parcela_id'    => $parcela?->id,
+                'tipo'          => $tipo,
+                'telefone'      => $telefone,
+                'mensagem'      => $texto,
+                'status'        => 'erro',
+                'erro_detalhes' => 'Envios pausados: teto de gasto com excedente atingido.',
+                'enviado_em'    => now(),
+            ]);
+            return;
+        }
+
         try {
             $this->twilio->messages->create(
                 "whatsapp:{$telefone}",
@@ -116,6 +131,8 @@ class MensagemService
                 'status'     => 'enviado',
                 'enviado_em' => now(),
             ]);
+
+            (new ConsumoService)->registrarEnvio($empresa);
         } catch (\Exception $e) {
             LogMensagem::create([
                 'empresa_id'     => $empresa->id,

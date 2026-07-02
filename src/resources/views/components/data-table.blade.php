@@ -39,7 +39,7 @@
     @endisset
 
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col flex-1 min-h-0">
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-auto">
             {{ $slot }}
         </div>
 

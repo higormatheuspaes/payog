@@ -17,6 +17,7 @@ class Empresa extends Model
         'logo_path',
         'plano_id',
         'status_assinatura',
+        'teto_gasto_excedente',
         'notificacoes_ativas',
         'dias_antes_vencimento',
         'frequencia_aviso_atraso',
@@ -31,6 +32,7 @@ class Empresa extends Model
     {
         return [
             'status_assinatura'     => 'string',
+            'teto_gasto_excedente'  => 'decimal:2',
             'notificacoes_ativas'   => 'boolean',
             'dias_antes_vencimento' => 'integer',
         ];

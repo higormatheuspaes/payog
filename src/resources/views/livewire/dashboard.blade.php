@@ -3,6 +3,7 @@
 use App\Models\Cliente;
 use App\Models\Cobranca;
 use App\Models\Parcela;
+use App\Services\ConsumoService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -50,7 +51,8 @@ new #[Layout('layouts.app')] class extends Component
 
     public function with(): array
     {
-        $empresaId = Auth::user()->empresa_id;
+        $empresa   = Auth::user()->empresa->load('plano');
+        $empresaId = $empresa->id;
 
         $totalClientes = Cliente::where('empresa_id', $empresaId)->count();
 
@@ -130,6 +132,12 @@ new #[Layout('layouts.app')] class extends Component
             (int) ($scoreDist['risco']->total ?? 0),
         ];
 
+        $consumo         = (new ConsumoService)->consumoAtual($empresa);
+        $limiteMensagens = $empresa->plano?->limite_mensagens_mes ?? 0;
+        $percentualConsumo = $limiteMensagens > 0
+            ? min(100, (int) round(($consumo->mensagens_enviadas / $limiteMensagens) * 100))
+            : 0;
+
         return compact(
             'totalClientes',
             'valorAReceber',
@@ -142,6 +150,9 @@ new #[Layout('layouts.app')] class extends Component
             'mesesValores',
             'scoreLabels',
             'scoreValores',
+            'consumo',
+            'limiteMensagens',
+            'percentualConsumo',
         );
     }
 }; ?>
@@ -186,6 +197,105 @@ new #[Layout('layouts.app')] class extends Component
         </div>
 
     </div>
+
+    {{-- Consumo de mensagens --}}
+    @if($limiteMensagens > 0)
+    @php
+        $emExcedente = $percentualConsumo >= 100 && ! $consumo->envios_pausados;
+
+        if ($consumo->envios_pausados) {
+            $borderClass = 'border-red-300';
+            $barColor    = 'bg-red-500';
+            $badgeClass  = 'bg-red-100 text-red-700';
+            $badgeLabel  = 'Envios pausados';
+            $pctClass    = 'text-red-600 font-semibold';
+        } elseif ($emExcedente) {
+            $borderClass = 'border-red-200';
+            $barColor    = 'bg-red-400';
+            $badgeClass  = 'bg-red-100 text-red-700';
+            $badgeLabel  = 'Em excedente';
+            $pctClass    = 'text-red-500 font-semibold';
+        } elseif ($percentualConsumo >= 80) {
+            $borderClass = 'border-yellow-200';
+            $barColor    = 'bg-yellow-400';
+            $badgeClass  = 'bg-yellow-100 text-yellow-700';
+            $badgeLabel  = 'Atenção';
+            $pctClass    = 'text-yellow-600 font-medium';
+        } else {
+            $borderClass = 'border-gray-200';
+            $barColor    = 'bg-indigo-500';
+            $badgeClass  = 'bg-green-100 text-green-700';
+            $badgeLabel  = 'Normal';
+            $pctClass    = 'text-gray-500';
+        }
+    @endphp
+    <div class="bg-white rounded-xl border {{ $borderClass }} p-5">
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <h2 class="text-sm font-semibold text-gray-700">Consumo de mensagens</h2>
+                <p class="text-xs text-gray-400 mt-0.5">{{ now()->translatedFormat('F Y') }}</p>
+            </div>
+            <span class="text-xs font-medium px-2.5 py-1 rounded-full {{ $badgeClass }}">{{ $badgeLabel }}</span>
+        </div>
+
+        <div class="flex items-center gap-5">
+            <div class="flex-1 min-w-0">
+                <div class="flex justify-between text-xs text-gray-500 mb-1.5">
+                    <span>{{ $consumo->mensagens_enviadas }} / {{ $limiteMensagens }} mensagens</span>
+                    <span class="{{ $pctClass }}">{{ $percentualConsumo }}%</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2">
+                    <div class="h-2 rounded-full transition-all {{ $barColor }}" style="width: {{ min(100, $percentualConsumo) }}%"></div>
+                </div>
+            </div>
+
+            @if($consumo->mensagens_excedentes > 0)
+            <div class="flex-shrink-0 text-right pl-4 border-l border-red-100">
+                <p class="text-sm font-bold text-red-600">R$ {{ number_format($consumo->valor_excedente_acumulado, 2, ',', '.') }}</p>
+                <p class="text-xs text-red-400 mt-0.5">{{ $consumo->mensagens_excedentes }} msg(s) excedentes</p>
+            </div>
+            @endif
+        </div>
+
+        {{-- Alertas --}}
+        @if($consumo->envios_pausados)
+            <div class="mt-3 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-100">
+                <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                </svg>
+                <p class="text-xs text-red-700">
+                    <strong>Envios bloqueados.</strong> O teto de R$ {{ number_format($consumo->teto_gasto_excedente, 2, ',', '.') }} foi atingido. Nenhuma mensagem será enviada até o início do próximo ciclo.
+                    <a href="{{ route('configuracoes.index') }}" wire:navigate class="underline ml-1">Ajustar limite →</a>
+                </p>
+            </div>
+        @elseif($emExcedente)
+            <div class="mt-3 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-100">
+                <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-xs text-red-700">
+                    <strong>Limite do plano atingido.</strong> Cada mensagem adicional está sendo cobrada a R$ 0,20.
+                    @if($consumo->teto_gasto_excedente)
+                        Teto configurado: R$ {{ number_format($consumo->teto_gasto_excedente, 2, ',', '.') }}.
+                    @else
+                        <a href="{{ route('configuracoes.index') }}" wire:navigate class="underline ml-1">Configurar teto de gasto →</a>
+                    @endif
+                </p>
+            </div>
+        @elseif($percentualConsumo >= 80)
+            <div class="mt-3 flex items-start gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-100">
+                <svg class="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-xs text-yellow-700">
+                    <strong>Atenção:</strong> você já usou {{ $percentualConsumo }}% do limite de mensagens do seu plano este mês.
+                </p>
+            </div>
+        @elseif($consumo->teto_gasto_excedente)
+            <p class="text-xs text-gray-400 mt-2">Teto configurado: R$ {{ number_format($consumo->teto_gasto_excedente, 2, ',', '.') }}</p>
+        @endif
+    </div>
+    @endif
 
     {{-- Tabelas lado a lado --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">

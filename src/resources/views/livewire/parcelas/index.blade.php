@@ -118,16 +118,16 @@ new #[Layout('layouts.app')] class extends Component
         </div>
     </x-slot:filters>
 
-    <table class="w-full table-fixed text-sm">
+    <table class="w-full table-fixed text-sm min-w-[460px]">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[22%]">Cliente</th>
-                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Cobrança</th>
-                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[42px]">#</th>
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Cliente</th>
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide hidden sm:table-cell">Cobrança</th>
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[42px] hidden sm:table-cell">#</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[96px]">Vencimento</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[88px]">Valor</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[90px]">Status</th>
-                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[88px]">Pago em</th>
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[88px] hidden sm:table-cell">Pago em</th>
                         <th class="px-4 py-3 w-[56px]"></th>
                     </tr>
                 </thead>
@@ -149,16 +149,16 @@ new #[Layout('layouts.app')] class extends Component
                             };
                         @endphp
                         <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 font-medium text-gray-900 truncate">
+                            <td class="px-4 py-3 font-medium text-gray-900">
                                 {{ $parcela->cobranca->cliente->nome }}
                             </td>
-                            <td class="px-4 py-3 text-gray-600 truncate">
+                            <td class="px-4 py-3 text-gray-600 truncate hidden sm:table-cell">
                                 <a href="{{ route('cobrancas.show', $parcela->cobranca_id) }}" wire:navigate
                                     class="hover:text-indigo-600 transition-colors">
                                     {{ $parcela->cobranca->descricao }}
                                 </a>
                             </td>
-                            <td class="px-4 py-3">
+                            <td class="px-4 py-3 hidden sm:table-cell">
                                 <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
                                     {{ $parcela->numero }}
                                 </span>
@@ -174,7 +174,7 @@ new #[Layout('layouts.app')] class extends Component
                                     {{ $statusLabel }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-gray-500 text-sm">
+                            <td class="px-4 py-3 text-gray-500 text-sm hidden sm:table-cell">
                                 {{ $parcela->data_pagamento ? $parcela->data_pagamento->format('d/m/Y') : '—' }}
                             </td>
                             <td class="px-4 py-3">

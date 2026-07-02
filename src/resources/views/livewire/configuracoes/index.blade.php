@@ -27,6 +27,9 @@ new #[Layout('layouts.app')] class extends Component
     public int    $dias_antes_vencimento    = 3;
     public string $frequencia_aviso_atraso  = 'semanal';
 
+    // Controle de consumo
+    public string $teto_gasto_excedente = '';
+
     // Aba Integrações — Asaas
     public string $asaas_api_key = '';
 
@@ -50,6 +53,7 @@ new #[Layout('layouts.app')] class extends Component
         $this->notificacoes_ativas     = $empresa->notificacoes_ativas;
         $this->dias_antes_vencimento   = $empresa->dias_antes_vencimento ?? 3;
         $this->frequencia_aviso_atraso = $empresa->frequencia_aviso_atraso ?? 'semanal';
+        $this->teto_gasto_excedente    = $empresa->teto_gasto_excedente ? (string) $empresa->teto_gasto_excedente : '';
 
         // Asaas — só indica se já tem chave configurada (não exibe o valor)
         $integracao = $empresa->integracoesGateway()->where('gateway', 'asaas')->where('ativo', true)->first();
@@ -90,13 +94,23 @@ new #[Layout('layouts.app')] class extends Component
         $this->validate([
             'dias_antes_vencimento'   => 'required|integer|min:1|max:30',
             'frequencia_aviso_atraso' => 'required|in:diaria,semanal,mensal',
+            'teto_gasto_excedente'    => 'nullable|numeric|min:1',
         ]);
 
-        Auth::user()->empresa->update([
+        $teto    = $this->teto_gasto_excedente !== '' ? (float) $this->teto_gasto_excedente : null;
+        $empresa = Auth::user()->empresa;
+
+        $empresa->update([
             'notificacoes_ativas'      => $this->notificacoes_ativas,
             'dias_antes_vencimento'    => $this->dias_antes_vencimento,
             'frequencia_aviso_atraso'  => $this->frequencia_aviso_atraso,
+            'teto_gasto_excedente'     => $teto,
         ]);
+
+        // Sincroniza o teto no registro de consumo do mês atual
+        $empresa->consumoMensagensMes()
+            ->where('ciclo_referencia', now()->startOfMonth()->toDateString())
+            ->update(['teto_gasto_excedente' => $teto]);
 
         $this->mensagem     = 'Configurações de notificação salvas.';
         $this->mensagemTipo = 'sucesso';
@@ -475,6 +489,22 @@ new #[Layout('layouts.app')] class extends Component
                     </div>
                 </div>
 
+            </div>
+
+            {{-- Limite de custo com excedente --}}
+            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-900">Limite de gasto com excedente</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Quando o custo das mensagens acima do plano atingir este valor, novos envios são pausados automaticamente. Deixe vazio para sem limite.</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-sm text-gray-500">R$</span>
+                        <input wire:model="teto_gasto_excedente" type="number" min="1" step="1" placeholder="Sem limite"
+                            class="w-28 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                </div>
+                @error('teto_gasto_excedente') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
 
             {{-- Resumo dinâmico --}}
