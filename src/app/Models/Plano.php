@@ -11,6 +11,7 @@ class Plano extends Model
         'nome',
         'limite_mensagens_mes',
         'valor_mensal',
+        'abacatepay_product_id',
     ];
 
     protected function casts(): array

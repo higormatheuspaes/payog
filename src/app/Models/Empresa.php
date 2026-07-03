@@ -26,6 +26,8 @@ class Empresa extends Model
         'notif_lembrete_dia_ativo',
         'notif_aviso_atraso_ativo',
         'notif_confirmacao_pagamento_ativo',
+        'abacatepay_customer_id',
+        'abacatepay_subscription_id',
     ];
 
     protected function casts(): array

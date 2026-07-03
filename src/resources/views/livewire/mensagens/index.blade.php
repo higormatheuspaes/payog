@@ -74,7 +74,7 @@ new #[Layout('layouts.app')] class extends Component
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[132px] hidden md:table-cell">Data</th>
-                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[160px] hidden sm:table-cell">Cliente</th>
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[180px] hidden sm:table-cell">Cliente</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[130px] hidden lg:table-cell">Tipo</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide w-[140px] hidden lg:table-cell">Telefone</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Mensagem</th>
@@ -100,7 +100,7 @@ new #[Layout('layouts.app')] class extends Component
                             <td class="px-4 py-3 text-gray-500 whitespace-nowrap hidden md:table-cell">
                                 {{ $msg->enviado_em->format('d/m/Y H:i') }}
                             </td>
-                            <td class="px-4 py-3 font-medium text-gray-900 truncate hidden sm:table-cell">
+                            <td class="px-4 py-3 font-medium text-gray-900 hidden sm:table-cell">
                                 {{ $msg->cliente->nome ?? '—' }}
                             </td>
                             <td class="px-4 py-3 hidden lg:table-cell">

@@ -1,12 +1,34 @@
 <?php
 
+use App\Http\Controllers\AssinaturaController;
 use App\Http\Controllers\RelatorioController;
+use App\Http\Controllers\WebhookAbacatePayController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
 Route::view('/', 'welcome');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+// Webhook AbacatePay (sem CSRF)
+Route::post('webhook/abacatepay', [WebhookAbacatePayController::class, 'handle'])
+    ->name('webhook.abacatepay');
+
+// Páginas de assinatura (auth obrigatório, mas sem middleware de assinatura para evitar loop)
+Route::middleware('auth')->group(function () {
+    Route::get('assinatura/aguardando', fn () => view('assinatura.aguardando'))->name('assinatura.aguardando');
+    Route::get('assinatura/pendente',   fn () => view('assinatura.pendente'))->name('assinatura.pendente');
+    Route::get('assinatura/suspensa',   fn () => view('assinatura.suspensa'))->name('assinatura.suspensa');
+    Route::get('assinatura/cancelada',  fn () => view('assinatura.cancelada'))->name('assinatura.cancelada');
+    Route::post('assinatura/checkout',  [AssinaturaController::class, 'gerarCheckout'])->name('assinatura.checkout');
+
+    Route::post('sair', function () {
+        auth()->logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect('/');
+    })->name('logout');
+});
+
+Route::middleware(['auth', 'verified', 'assinatura'])->group(function () {
     Volt::route('dashboard', 'dashboard')->name('dashboard');
     Volt::route('clientes', 'clientes/index')->name('clientes.index');
     Volt::route('cobrancas', 'cobrancas/index')->name('cobrancas.index');

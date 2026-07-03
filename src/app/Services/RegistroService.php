@@ -14,15 +14,15 @@ class RegistroService
     public function registrar(array $dados): User
     {
         return DB::transaction(function () use ($dados) {
-            $plano = Plano::where('nome', 'Básico')->firstOrFail();
+            $plano = Plano::findOrFail($dados['plano_id']);
 
             $empresa = Empresa::create([
-                'nome'               => $dados['nome_empresa'],
-                'cnpj_cpf'           => $dados['cnpj_cpf'],
-                'telefone'           => $dados['telefone'],
-                'email'              => $dados['email'],
-                'plano_id'           => $plano->id,
-                'status_assinatura'  => 'trial',
+                'nome'              => $dados['nome_empresa'],
+                'cnpj_cpf'         => $dados['cnpj_cpf'],
+                'telefone'         => $dados['telefone'],
+                'email'            => $dados['email'],
+                'plano_id'         => $plano->id,
+                'status_assinatura' => 'pendente',
             ]);
 
             $user = User::create([
@@ -34,7 +34,7 @@ class RegistroService
 
             Assinatura::create([
                 'empresa_id' => $empresa->id,
-                'status'     => 'trial',
+                'status'     => 'pendente',
             ]);
 
             return $user;

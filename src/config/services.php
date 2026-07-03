@@ -41,4 +41,10 @@ return [
         'whatsapp_from'  => env('TWILIO_WHATSAPP_FROM'),
     ],
 
+    'abacatepay' => [
+        'key'            => env('ABACATEPAY_API_KEY'),
+        'url'            => env('ABACATEPAY_API_URL', 'https://api.abacatepay.com/v2'),
+        'webhook_secret' => env('ABACATEPAY_WEBHOOK_SECRET'),
+    ],
+
 ];
