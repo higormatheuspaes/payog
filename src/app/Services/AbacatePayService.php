@@ -54,6 +54,23 @@ class AbacatePayService
         return $this->post('/subscriptions/cancel', ['id' => $subscriptionId]);
     }
 
+    public function mudarPlano(string $subscriptionId, string $productId): array
+    {
+        return $this->post('/subscriptions/change-plan', [
+            'id'        => $subscriptionId,
+            'productId' => $productId,
+            'quantity'  => 1,
+        ]);
+    }
+
+    public function deletarCustomer(string $customerId): void
+    {
+        Http::withToken($this->apiKey)
+            ->acceptJson()
+            ->post($this->baseUrl . '/customers/delete?id=' . $customerId);
+        // ignora erro — se já foi deletado ou não existe, não precisa falhar
+    }
+
     private function post(string $endpoint, array $data): array
     {
         $response = Http::withToken($this->apiKey)

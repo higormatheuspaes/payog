@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\Empresa;
+use App\Services\AbacatePayService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -33,7 +35,12 @@ new #[Layout('layouts.app')] class extends Component
     // Aba Integrações — Asaas
     public string $asaas_api_key = '';
 
-    public string $mensagem = '';
+    // Modais de confirmação
+    public bool   $modalCancelar = false;
+    public bool   $modalExcluir  = false;
+    public string $textoExclusao = '';
+
+    public string $mensagem     = '';
     public string $mensagemTipo = 'sucesso';
 
     public function mount(): void
@@ -114,6 +121,83 @@ new #[Layout('layouts.app')] class extends Component
 
         $this->mensagem     = 'Configurações de notificação salvas.';
         $this->mensagemTipo = 'sucesso';
+    }
+
+    public function cancelarAssinatura(): void
+    {
+        $empresa = Auth::user()->empresa;
+
+        try {
+            $abacate = new AbacatePayService;
+
+            if ($empresa->abacatepay_subscription_id) {
+                try {
+                    $abacate->cancelarAssinatura($empresa->abacatepay_subscription_id);
+                } catch (\Exception) {}
+            }
+
+            $empresa->update(['status_assinatura' => 'cancelado']);
+            $empresa->assinatura?->update(['status' => 'cancelada']);
+
+            $this->redirect(route('assinatura.cancelada'));
+        } catch (\Exception $e) {
+            Log::error('Cancelamento de assinatura falhou', ['empresa_id' => $empresa->id, 'error' => $e->getMessage()]);
+            $this->modalCancelar = false;
+            $this->mensagem      = 'Não foi possível cancelar. Tente novamente.';
+            $this->mensagemTipo  = 'erro';
+        }
+    }
+
+    public function excluirConta(): void
+    {
+        if ($this->textoExclusao !== 'EXCLUIR') {
+            $this->mensagem     = 'Digite EXCLUIR para confirmar.';
+            $this->mensagemTipo = 'erro';
+            return;
+        }
+
+        $user    = Auth::user();
+        $empresa = $user->empresa;
+
+        try {
+            $abacate = new AbacatePayService;
+
+            if ($empresa->abacatepay_subscription_id) {
+                try { $abacate->cancelarAssinatura($empresa->abacatepay_subscription_id); } catch (\Exception) {}
+            }
+            if ($empresa->abacatepay_customer_id) {
+                $abacate->deletarCustomer($empresa->abacatepay_customer_id);
+            }
+
+            // Anonimiza dados (LGPD) — preserva registros financeiros
+            $empresa->update([
+                'nome'                       => 'Conta Excluída',
+                'email'                      => null,
+                'cnpj_cpf'                   => '00000000000',
+                'telefone'                   => null,
+                'logo_path'                  => null,
+                'status_assinatura'          => 'cancelado',
+                'abacatepay_customer_id'     => null,
+                'abacatepay_subscription_id' => null,
+            ]);
+
+            $user->update([
+                'name'     => 'Usuário Excluído',
+                'email'    => 'excluido_' . $user->id . '@payog.local',
+                'password' => bcrypt(\Illuminate\Support\Str::random(32)),
+            ]);
+
+            Auth::logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+
+            $this->redirect('/');
+        } catch (\Exception $e) {
+            Log::error('Exclusão de conta falhou', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            $this->modalExcluir = false;
+            $this->mensagem     = 'Não foi possível excluir a conta. Tente novamente.';
+            $this->mensagemTipo = 'erro';
+        }
     }
 
     public function salvarAsaas(): void
@@ -319,16 +403,18 @@ new #[Layout('layouts.app')] class extends Component
                                 <svg class="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                 Score de clientes
                             </div>
-                            <div class="flex items-center gap-2">
-                                <svg class="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                Integração com Asaas
-                            </div>
                         </div>
-                        <div class="mt-4 pt-4 border-t border-gray-100">
-                            <a href="#" class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-200 text-indigo-600 text-xs font-medium hover:bg-indigo-50 transition-colors">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-                                Ver planos
+                        <div class="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                            <a href="{{ route('assinatura.planos') }}" wire:navigate
+                                class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-200 text-indigo-600 text-xs font-medium hover:bg-indigo-50 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                                Mudar plano
                             </a>
+                            <button wire:click="$set('modalCancelar', true)"
+                                class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                Cancelar assinatura
+                            </button>
                         </div>
                     </div>
 
@@ -344,14 +430,80 @@ new #[Layout('layouts.app')] class extends Component
                                 <p class="text-sm font-medium text-gray-700 truncate">{{ auth()->user()->email }}</p>
                             </div>
                         </div>
-                        <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="mt-4 pt-4 border-t border-gray-100 space-y-2">
                             <a href="{{ route('profile') }}" wire:navigate class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition-colors">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                 Editar senha / e-mail
                             </a>
+                            <button wire:click="$set('modalExcluir', true)"
+                                class="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                Excluir conta
+                            </button>
                         </div>
                     </div>
 
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal: Cancelar assinatura --}}
+    @if($modalCancelar)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+            <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900 text-center mb-2">Cancelar assinatura?</h3>
+                <p class="text-sm text-gray-500 text-center mb-6">
+                    Seu acesso será bloqueado imediatamente. Seus dados permanecem salvos por 30 dias e você pode reativar quando quiser.
+                </p>
+                <div class="flex gap-3">
+                    <button wire:click="$set('modalCancelar', false)"
+                        class="flex-1 px-4 py-2 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        Voltar
+                    </button>
+                    <button wire:click="cancelarAssinatura" wire:loading.attr="disabled"
+                        class="flex-1 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50">
+                        <span wire:loading.remove wire:target="cancelarAssinatura">Cancelar assinatura</span>
+                        <span wire:loading wire:target="cancelarAssinatura">Cancelando...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal: Excluir conta --}}
+    @if($modalExcluir)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+            <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900 text-center mb-2">Excluir conta permanentemente?</h3>
+                <p class="text-sm text-gray-500 text-center mb-4">
+                    Seus dados pessoais serão removidos imediatamente. Os registros financeiros são anonimizados conforme a LGPD. Esta ação é irreversível.
+                </p>
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-gray-600 mb-1.5">Digite <strong>EXCLUIR</strong> para confirmar</label>
+                    <input wire:model="textoExclusao" type="text" placeholder="EXCLUIR"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                </div>
+                <div class="flex gap-3">
+                    <button wire:click="$set('modalExcluir', false); $set('textoExclusao', '')"
+                        class="flex-1 px-4 py-2 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button wire:click="excluirConta" wire:loading.attr="disabled"
+                        class="flex-1 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50">
+                        <span wire:loading.remove wire:target="excluirConta">Excluir conta</span>
+                        <span wire:loading wire:target="excluirConta">Excluindo...</span>
+                    </button>
                 </div>
             </div>
         </div>

@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'assinatura'])->group(function () {
+    Volt::route('assinatura/planos', 'assinatura/planos')->name('assinatura.planos');
     Volt::route('dashboard', 'dashboard')->name('dashboard');
     Volt::route('clientes', 'clientes/index')->name('clientes.index');
     Volt::route('cobrancas', 'cobrancas/index')->name('cobrancas.index');

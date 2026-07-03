@@ -61,7 +61,14 @@ class WebhookAbacatePayController extends Controller
         $empresa = $this->resolverEmpresa($data);
         if (! $empresa) return;
 
-        $empresa->update(['status_assinatura' => 'ativo']);
+        // Sincroniza o plano caso tenha sido alterado direto no painel AbacatePay
+        $productId = $data['checkout']['items'][0]['id'] ?? $data['subscription']['productId'] ?? null;
+        $plano     = $productId ? Plano::where('abacatepay_product_id', $productId)->first() : null;
+
+        $empresa->update([
+            'status_assinatura' => 'ativo',
+            'plano_id'          => $plano?->id ?? $empresa->plano_id,
+        ]);
         $empresa->assinatura?->update(['status' => 'ativa']);
     }
 
