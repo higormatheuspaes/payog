@@ -15,8 +15,7 @@ new #[Layout('layouts.app')] class extends Component
 
         $this->cliente = $cliente->load([
             'cobrancas.parcelas.logMensagens',
-            'scoreHistorico' => fn($q) => $q->latest()->limit(20),
-            'scoreHistorico.parcela.cobranca',
+            'scoreHistorico' => fn($q) => $q->with('parcela.cobranca')->latest()->limit(20),
         ]);
     }
 }; ?>

@@ -73,6 +73,13 @@ return [
             'report' => false,
         ],
 
+        // Disco usado pelo spatie/laravel-backup.
+        // Em produção aponte BACKUP_DISK=r2 (ou s3) e configure as credenciais correspondentes.
+        'backup' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+        ],
+
     ],
 
     /*

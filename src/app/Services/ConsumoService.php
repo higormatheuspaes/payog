@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ConsumoMensagensMes;
 use App\Models\Empresa;
+use App\Notifications\AlertaConsumoMensagens;
 use Illuminate\Support\Facades\DB;
 
 class ConsumoService
@@ -49,7 +50,9 @@ class ConsumoService
         $limite = $empresa->plano?->limite_mensagens_mes ?? PHP_INT_MAX;
         $ciclo  = now()->startOfMonth()->toDateString();
 
-        DB::transaction(function () use ($empresa, $limite, $ciclo) {
+        $alertas = [];
+
+        DB::transaction(function () use ($empresa, $limite, $ciclo, &$alertas) {
             $consumo = ConsumoMensagensMes::firstOrCreate(
                 ['empresa_id' => $empresa->id, 'ciclo_referencia' => $ciclo],
                 [
@@ -61,7 +64,8 @@ class ConsumoService
                 ]
             );
 
-            $enviadas   = $consumo->mensagens_enviadas + 1;
+            $anterior = (int) $consumo->mensagens_enviadas;
+            $enviadas = $anterior + 1;
             $excedentes = max(0, $enviadas - $limite);
             $valor      = round($excedentes * self::VALOR_EXCEDENTE_POR_MSG, 2);
             $pausar     = $consumo->teto_gasto_excedente !== null
@@ -73,6 +77,33 @@ class ConsumoService
                 'valor_excedente_acumulado' => $valor,
                 'envios_pausados'           => $pausar,
             ]);
+
+            // Gatilho: atingiu 80% do limite (apenas uma vez, ao cruzar o threshold)
+            $limite80 = (int) ($limite * 0.8);
+            if ($limite !== PHP_INT_MAX && $anterior < $limite80 && $enviadas >= $limite80) {
+                $alertas[] = [AlertaConsumoMensagens::TIPO_80_PORCENTO, $enviadas, $limite, 0.0];
+            }
+
+            // Gatilho: primeira mensagem em excedente
+            if ($anterior <= $limite && $enviadas > $limite) {
+                $alertas[] = [AlertaConsumoMensagens::TIPO_EXCEDENTE, $enviadas, $limite, $valor];
+            }
+
+            // Gatilho: teto de gasto atingido (primeira vez que pausa)
+            if ($pausar && ! (bool) $consumo->getOriginal('envios_pausados')) {
+                $alertas[] = [AlertaConsumoMensagens::TIPO_TETO, $enviadas, $limite, $valor];
+            }
         });
+
+        // Envia alertas fora da transação para não atrasar o commit
+        if ($alertas) {
+            $empresa->loadMissing('users');
+            $user = $empresa->users()->first();
+            if ($user) {
+                foreach ($alertas as [$tipo, $enviadas, $limite, $valor]) {
+                    $user->notify(new AlertaConsumoMensagens($tipo, $enviadas, $limite, $valor));
+                }
+            }
+        }
     }
 }

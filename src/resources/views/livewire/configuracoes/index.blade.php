@@ -74,7 +74,7 @@ new #[Layout('layouts.app')] class extends Component
             'cnpj_cpf' => 'required|string|max:18',
             'email'    => 'required|email|max:255',
             'telefone' => 'required|string|max:20',
-            'logo'     => 'nullable|image|max:2048',
+            'logo'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $empresa = Auth::user()->empresa;

@@ -6,7 +6,11 @@ use App\Http\Controllers\WebhookAbacatePayController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
-Route::view('/', 'welcome');
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
+});
 
 // Webhook AbacatePay (sem CSRF)
 Route::post('webhook/abacatepay', [WebhookAbacatePayController::class, 'handle'])
@@ -18,7 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::get('assinatura/pendente',   fn () => view('assinatura.pendente'))->name('assinatura.pendente');
     Route::get('assinatura/suspensa',   fn () => view('assinatura.suspensa'))->name('assinatura.suspensa');
     Route::get('assinatura/cancelada',  fn () => view('assinatura.cancelada'))->name('assinatura.cancelada');
-    Route::post('assinatura/checkout',  [AssinaturaController::class, 'gerarCheckout'])->name('assinatura.checkout');
+    Route::post('assinatura/checkout',  [AssinaturaController::class, 'gerarCheckout'])->name('assinatura.checkout')->middleware('throttle:5,10');
 
     Route::post('sair', function () {
         auth()->logout();
