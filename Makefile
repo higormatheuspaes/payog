@@ -1,4 +1,5 @@
-.PHONY: help up down build shell artisan composer npm migrate fresh seed test logs ps
+.PHONY: help up down build shell artisan composer npm migrate fresh seed test logs ps \
+        prod-up prod-down prod-build prod-logs prod-shell prod-migrate prod-deploy
 
 # ── Geral ─────────────────────────────────────────────────────────────────────
 
@@ -90,3 +91,33 @@ cache-clear: ## Limpa todos os caches
 
 queue-restart: ## Reinicia os workers de fila
 	docker compose exec app php artisan queue:restart
+
+# ── Produção ──────────────────────────────────────────────────────────────────
+
+prod-up: ## Sobe stack de produção
+	docker compose -f docker-compose.prod.yml up -d
+
+prod-down: ## Para stack de produção
+	docker compose -f docker-compose.prod.yml down
+
+prod-build: ## Reconstrói imagem PHP de produção
+	docker compose -f docker-compose.prod.yml build --no-cache app
+
+prod-logs: ## Logs de produção
+	docker compose -f docker-compose.prod.yml logs -f
+
+prod-shell: ## Shell no container de produção
+	docker compose -f docker-compose.prod.yml exec app bash
+
+prod-migrate: ## Migrations em produção
+	docker compose -f docker-compose.prod.yml exec app php artisan migrate --force
+
+prod-deploy: ## Deploy manual em produção (git pull + build + up + migrate + optimize)
+	git pull origin main
+	docker run --rm -v $(shell pwd)/src:/app -w /app node:20-alpine sh -c "npm ci --prefer-offline && npm run build"
+	docker compose -f docker-compose.prod.yml build app
+	docker compose -f docker-compose.prod.yml up -d --remove-orphans
+	docker compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
+	docker compose -f docker-compose.prod.yml exec -T app php artisan optimize
+	docker compose -f docker-compose.prod.yml exec -T app php artisan queue:restart
+	@echo "✅ Deploy concluído!"
